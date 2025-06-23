@@ -35,6 +35,14 @@ def read_dataframe():
     return dataset_from_database
 
 
+def create_train_test_datasets(dataset_from_database):
+    target = 'claim_status'
+    X, y = dataset_from_database.drop(target, axis=1), dataset_from_database[[target]]
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=1889)
+
+    return X_train, X_test, y_train, y_test
+
+
 def train_model(X_train, y_train, X_test, y_test):
     with mlflow.start_run() as run:
         mlflow.set_tag("model", "xgboost")
@@ -127,9 +135,8 @@ def run():
     mlflow.set_tracking_uri(f"http://{TRACKING_SERVER_HOST}:5000")
 
     dataset_from_database = read_dataframe()
-    target = 'claim_status'
-    X, y = dataset_from_database.drop(target, axis=1), dataset_from_database[[target]]
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=1889)
+
+    X_train, X_test, y_train, y_test = create_train_test_datasets(dataset_from_database)
 
     run_id = train_model(X_train, y_train, X_test, y_test)
     print(f"MLflow run_id: {run_id}")
