@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+import os
 import pickle
 from pathlib import Path
 
@@ -18,11 +19,19 @@ import mlflow
 np.random.seed(1889)
 
 
-mlflow.set_tracking_uri("http://localhost:5000")
-mlflow.set_experiment("claims_status")
+# mlflow.set_tracking_uri("http://localhost:5000")
+# mlflow.set_experiment("claims_status")
 
-models_folder = Path('models')
-models_folder.mkdir(exist_ok=True)
+# models_folder = Path('models')
+# models_folder.mkdir(exist_ok=True)
+
+
+
+os.environ["AWS_PROFILE"] = "mlops-user"  # AWS profile name
+TRACKING_SERVER_HOST = "ec2-44-201-155-83.compute-1.amazonaws.com" # public DNS of the EC2 instance
+mlflow.set_tracking_uri(f"http://{TRACKING_SERVER_HOST}:5000")
+
+print(f"tracking URI: '{mlflow.get_tracking_uri()}'")
 
 
 
