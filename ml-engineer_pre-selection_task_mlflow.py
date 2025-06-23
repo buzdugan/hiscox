@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+import pickle
 from pathlib import Path
 
 import numpy as np
@@ -45,6 +46,7 @@ def read_dataframe():
 
 def train_model(X_train, y_train, X_test, y_test):
     with mlflow.start_run() as run:
+        mlflow.set_tag("model", "xgboost")
         # Build the evaluation set & metric list
         eval_set = [(X_train, y_train)]
         eval_metrics = ['auc', 'rmse', 'logloss']
@@ -87,6 +89,9 @@ def train_model(X_train, y_train, X_test, y_test):
 
         model.fit(X_train, y_train, eval_set=eval_set, verbose=False)
 
+        with open('models/xgboost.bin', 'wb') as f_out:
+            pickle.dump(model, f_out)
+
         # Model evaluation
         train_class_preds = model.predict(X_train)
         test_class_preds = model.predict(X_test)
@@ -94,28 +99,27 @@ def train_model(X_train, y_train, X_test, y_test):
         test_prob_preds = model.predict_proba(X_test)[:, 1]
 
         # Log metrics
-        def kappa_score(y_train, train_class_preds):
-            y = np.array(y_train)
+        def kappa_score(y_true, y_class_preds):
+            y = np.array(y_true)
             y = y.astype(int)
-            yhat = np.array(train_class_preds)
+            yhat = np.array(y_class_preds)
             yhat = np.clip(np.round(yhat), np.min(y), np.max(y)).astype(int)
             kappa = round(cohen_kappa_score(yhat, y, weights='quadratic'), 2)
             return kappa
         
-        kappa_train = kappa_score(y_train, train_class_preds)
-        kappa_test = kappa_score(y_test, test_class_preds)
-
-        mlflow.log_metric("kappa_train", kappa_train)
-        mlflow.log_metric("kappa_test", kappa_test)
-        mlflow.log_metric("train_accuracy", accuracy_score(y_train, train_class_preds))
-        mlflow.log_metric("test_accuracy", accuracy_score(y_test, test_class_preds))
-        mlflow.log_metric("train_roc", roc_auc_score(y_train, train_prob_preds))
-        mlflow.log_metric("test_roc", roc_auc_score(y_test, test_prob_preds))
-        mlflow.log_metric("train_confusion_matrix", confusion_matrix(y_train, train_class_preds).tolist())
-        mlflow.log_metric("test_confusion_matrix", confusion_matrix(y_test, test_class_preds).tolist())
-        mlflow.log_metric("test_f1", f1_score(y_test, test_class_preds))
-        mlflow.log_metric("test_precision", precision_score(y_test, test_class_preds))
-        mlflow.log_metric("test_recall", recall_score(y_test, test_class_preds))
+        metrics = {
+            "kappa_train": kappa_score(y_train, train_class_preds),
+            "kappa_test": kappa_score(y_test, test_class_preds),
+            "train_accuracy": accuracy_score(y_train, train_class_preds),
+            "test_accuracy": accuracy_score(y_test, test_class_preds),
+            "train_roc": roc_auc_score(y_train, train_prob_preds),
+            "test_roc": roc_auc_score(y_test, test_prob_preds),
+            "test_f1": f1_score(y_test, test_class_preds),
+            "test_precision": precision_score(y_test, test_class_preds),
+            "test_recall": recall_score(y_test, test_class_preds)
+        }
+        for metric_name, metric_value in metrics.items():
+            mlflow.log_metric(metric_name, metric_value)
 
         # Log the model
         mlflow.xgboost.log_model(model, artifact_path="models_mlflow")
