@@ -16,24 +16,6 @@ from sklearn.model_selection import train_test_split, RandomizedSearchCV
 
 import mlflow
 
-np.random.seed(1889)
-
-
-# mlflow.set_tracking_uri("http://localhost:5000")
-# mlflow.set_experiment("claims_status")
-
-# models_folder = Path('models')
-# models_folder.mkdir(exist_ok=True)
-
-
-
-os.environ["AWS_PROFILE"] = "mlops-user"  # AWS profile name
-TRACKING_SERVER_HOST = "ec2-44-201-155-83.compute-1.amazonaws.com" # public DNS of the EC2 instance
-mlflow.set_tracking_uri(f"http://{TRACKING_SERVER_HOST}:5000")
-
-print(f"tracking URI: '{mlflow.get_tracking_uri()}'")
-
-
 
 # Assumption: We train model daily with data up to and including the previous day 
 # Date = date of application
@@ -137,11 +119,16 @@ def train_model(X_train, y_train, X_test, y_test):
 
 
 def run():
-    dataset_from_database = read_dataframe()
 
+    np.random.seed(1889)
+
+    os.environ["AWS_PROFILE"] = "mlops-user"  # AWS profile name
+    TRACKING_SERVER_HOST = "ec2-44-201-155-83.compute-1.amazonaws.com" # public DNS of the EC2 instance
+    mlflow.set_tracking_uri(f"http://{TRACKING_SERVER_HOST}:5000")
+
+    dataset_from_database = read_dataframe()
     target = 'claim_status'
     X, y = dataset_from_database.drop(target, axis=1), dataset_from_database[[target]]
-    # Split the data into training and testing sets
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=1889)
 
     run_id = train_model(X_train, y_train, X_test, y_test)
