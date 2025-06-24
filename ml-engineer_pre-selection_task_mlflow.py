@@ -207,19 +207,24 @@ def stage_model(client, run_id, model_name):
 def main_flow():
     np.random.seed(1889)
 
-    # os.environ["AWS_PROFILE"] = "mlops-user"  # AWS profile name
-    # tracking_server_host = "ec2-44-201-155-83.compute-1.amazonaws.com" # public DNS of the EC2 instance
-    # mlflow_tracking_uri = f"http://{tracking_server_host}:5000"
-    mlflow_tracking_uri = "http://127.0.0.1:5000" # run locally
+    print("Loading aws profile...")
+    os.environ["AWS_PROFILE"] = "mlops-user"  # AWS profile name
+    tracking_server_host = "ec2-13-218-161-214.compute-1.amazonaws.com" # public DNS of the EC2 instance
+    mlflow_tracking_uri = f"http://{tracking_server_host}:5000"
+    # mlflow_tracking_uri = "http://127.0.0.1:5000" # run locally
 
     experiment_name = "claims_status"
+    print("Connecting to mlflow tracking server...")
     client = init_mlflow(mlflow_tracking_uri, experiment_name)
+    print("Connected to mlflow tracking server...")
 
     dataset_from_database = read_dataframe()
     X_train, X_test, y_train, y_test = create_train_test_datasets(dataset_from_database)
+    print("Model training starting...")
     run_id = train_model(X_train, y_train, X_test, y_test)
 
     # Register the model
+    print("Model registering...")
     model_name = f"{experiment_name}_classifier"
     mlflow.register_model(
         model_uri=f"runs:/{run_id}/models_mlflow",
