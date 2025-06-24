@@ -2,6 +2,7 @@
 # coding: utf-8
 
 import os
+from datetime import date
 from pathlib import Path
 
 import numpy as np
@@ -15,6 +16,8 @@ from sklearn.model_selection import train_test_split, RandomizedSearchCV
 import mlflow
 from mlflow.tracking import MlflowClient
 from prefect import flow, task
+from prefect_aws import S3Bucket
+from prefect.artifacts import create_markdown_artifact
 
 
 @task(name="mlflow_initialization")
@@ -35,8 +38,9 @@ def init_mlflow(mlflow_tracking_uri, mlflow_experiment_name):
 
 
 @task(name="read_data", retries=3, retry_delay_seconds=2)
-def read_dataframe():
-    dataset_from_database = pd.read_csv("dataset_from_database.csv")
+def read_dataframe(file_path):
+    # dataset_from_database = pd.read_csv("dataset_from_database.csv")
+    dataset_from_database = pd.read_csv(file_path)
     # dataset_from_database = collect_from_database(f"SELECT * FROM CLAIMS.DS_DATASET")
     
     dataset_from_database.drop(columns=['family_history_3', 'employment_type'], inplace=True)
@@ -145,6 +149,24 @@ def train_model(X_train, y_train, X_test, y_test, artifact_path):
         # Log the model
         mlflow.xgboost.log_model(model, artifact_path=artifact_path)
 
+         # Prefect artifact to report trained model kappa score
+        markdown_kappa_score_report = f"""# Kappa Score Report
+
+        ## Summary
+
+        Claim Status Classification
+
+        ## XGBoost Classifier Kappa Score
+
+        | Region    | Kappa Score |
+        |:----------|-------:|
+        | {date.today()} | {kappa_score(y_test, test_class_preds)} |
+        """
+
+        create_markdown_artifact(
+            key="claim-status-model-report", markdown=markdown_kappa_score_report
+        )
+
         return run.info.run_id
 
 
@@ -217,6 +239,10 @@ def main_flow():
     # mlflow_tracking_uri = f"http://{tracking_server_host}:5000"
     mlflow_tracking_uri = "http://127.0.0.1:5000" # run locally
 
+    s3_bucket_block = S3Bucket.load("mlops-s3-bucket")
+    s3_bucket_block.download_folder_to_path(from_folder="data", to_folder="data")
+
+    file_path = Path("data/dataset_from_database.csv")
     experiment_name = "claims_status"
     model_name = f"{experiment_name}_classifier"
     artifact_path = "models_mlflow"
@@ -225,7 +251,7 @@ def main_flow():
     client = init_mlflow(mlflow_tracking_uri, experiment_name)
     print("Connected to mlflow tracking server...")
 
-    dataset_from_database = read_dataframe()
+    dataset_from_database = read_dataframe(file_path)
     X_train, X_test, y_train, y_test = create_train_test_datasets(dataset_from_database)
     print("Model training starting...")
     run_id = train_model(X_train, y_train, X_test, y_test, artifact_path)
