@@ -15,10 +15,10 @@ from sklearn.model_selection import train_test_split, RandomizedSearchCV
 
 import mlflow
 from mlflow.tracking import MlflowClient
-# from prefect import flow, task
+from prefect import flow, task
 
 
-# @task(name="mlflow_initialization")
+@task(name="mlflow_initialization")
 def init_mlflow(mlflow_tracking_uri, mlflow_experiment_name):
     client = MlflowClient(mlflow_tracking_uri)
 
@@ -35,7 +35,7 @@ def init_mlflow(mlflow_tracking_uri, mlflow_experiment_name):
     return client
 
 
-# @task(name="read_data", retries=3, retry_delay_seconds=2)
+@task(name="read_data", retries=3, retry_delay_seconds=2)
 def read_dataframe():
     dataset_from_database = pd.read_csv("dataset_from_database.csv")
     # dataset_from_database = collect_from_database(f"SELECT * FROM CLAIMS.DS_DATASET")
@@ -52,7 +52,7 @@ def read_dataframe():
     return dataset_from_database
 
 
-# @task(name="split_data")
+@task(name="split_data")
 def create_train_test_datasets(dataset_from_database):
     target = 'claim_status'
     X, y = dataset_from_database.drop(target, axis=1), dataset_from_database[[target]]
@@ -61,7 +61,7 @@ def create_train_test_datasets(dataset_from_database):
     return X_train, X_test, y_train, y_test
 
 
-# @task(name="hyperparameter_tuning", log_prints=True)
+@task(name="hyperparameter_tuning", log_prints=True)
 def hyperparameter_tuning(X_train, y_train, eval_set, eval_metrics):
     # Randomized search for hyperparameter tuning
     parameter_gridSearch = RandomizedSearchCV(
@@ -92,8 +92,8 @@ def hyperparameter_tuning(X_train, y_train, eval_set, eval_metrics):
     return parameter_gridSearch.best_params_
 
 
-# @task(name="train_model", log_prints=True)
-def train_model(X_train, y_train, X_test, y_test):
+@task(name="train_model", log_prints=True)
+def train_model(X_train, y_train, X_test, y_test, artifact_path):
     with mlflow.start_run() as run:
         mlflow.set_tag("model", "xgboost")
 
@@ -147,12 +147,20 @@ def train_model(X_train, y_train, X_test, y_test):
             mlflow.log_metric(metric_name, metric_value)
 
         # Log the model
-        mlflow.xgboost.log_model(model, artifact_path="models_mlflow")
+        mlflow.xgboost.log_model(model, artifact_path=artifact_path)
 
         return run.info.run_id
 
 
-# @task(name="productionize_model", log_prints=True)
+@task(name="register_model", log_prints=True)
+def register_model(run_id, model_name, artifact_path):    
+    mlflow.register_model(
+        model_uri=f"runs:/{run_id}/{artifact_path}",
+        name=model_name
+    )
+
+
+@task(name="productionize_model", log_prints=True)
 def stage_model(client, run_id, model_name):
     # Get all registered models for model name
     reg_models = client.search_registered_models(
@@ -203,17 +211,20 @@ def stage_model(client, run_id, model_name):
             print(f'Archived version {trained_model_version} of {model_name} model.')
     
 
-# @flow(name="claim_status_prediction_flow")
+@flow(name="claim_status_classification_flow")
 def main_flow():
     np.random.seed(1889)
 
     print("Loading aws profile...")
-    os.environ["AWS_PROFILE"] = "mlops-user"  # AWS profile name
-    tracking_server_host = "ec2-13-218-161-214.compute-1.amazonaws.com" # public DNS of the EC2 instance
-    mlflow_tracking_uri = f"http://{tracking_server_host}:5000"
-    # mlflow_tracking_uri = "http://127.0.0.1:5000" # run locally
+    # os.environ["AWS_PROFILE"] = "mlops-user"  # AWS profile name
+    # tracking_server_host = "ec2-13-218-161-214.compute-1.amazonaws.com" # public DNS of the EC2 instance
+    # mlflow_tracking_uri = f"http://{tracking_server_host}:5000"
+    mlflow_tracking_uri = "http://127.0.0.1:5000" # run locally
 
     experiment_name = "claims_status"
+    model_name = f"{experiment_name}_classifier"
+    artifact_path = "models_mlflow"
+
     print("Connecting to mlflow tracking server...")
     client = init_mlflow(mlflow_tracking_uri, experiment_name)
     print("Connected to mlflow tracking server...")
@@ -221,18 +232,13 @@ def main_flow():
     dataset_from_database = read_dataframe()
     X_train, X_test, y_train, y_test = create_train_test_datasets(dataset_from_database)
     print("Model training starting...")
-    run_id = train_model(X_train, y_train, X_test, y_test)
-
-    # Register the model
-    print("Model registering...")
-    model_name = f"{experiment_name}_classifier"
-    mlflow.register_model(
-        model_uri=f"runs:/{run_id}/models_mlflow",
-        name=model_name
-    )
+    run_id = train_model(X_train, y_train, X_test, y_test, artifact_path)
+    
+    register_model(run_id, model_name, artifact_path)
     print(f"Registered model {model_name} with run_id: {run_id}.")
 
     stage_model(client, run_id, model_name)
+    print(f"Staged model {model_name} with run_id: {run_id}.")
     
 
 if __name__ == "__main__":
