@@ -11,14 +11,14 @@ import xgboost as xgb
 from scipy import stats
 from sklearn.datasets import *
 from sklearn.feature_extraction import DictVectorizer
-from sklearn.metrics import cohen_kappa_score, accuracy_score, f1_score, precision_score, recall_score, confusion_matrix, roc_auc_score, confusion_matrix, log_loss, roc_curve
+from sklearn.metrics import cohen_kappa_score, accuracy_score, f1_score, precision_score, recall_score, roc_auc_score
 from sklearn.model_selection import train_test_split, RandomizedSearchCV
 
 import mlflow
+from prefect import flow, task
 
 
-# Assumption: We train model daily with data up to and including the previous day 
-# Date = date of application
+@task(retries=3, retry_delay_seconds=2)
 def read_dataframe():
     dataset_from_database = pd.read_csv("dataset_from_database.csv")
     # dataset_from_database = collect_from_database(f"SELECT * FROM CLAIMS.DS_DATASET")
@@ -35,6 +35,7 @@ def read_dataframe():
     return dataset_from_database
 
 
+@task
 def create_train_test_datasets(dataset_from_database):
     target = 'claim_status'
     X, y = dataset_from_database.drop(target, axis=1), dataset_from_database[[target]]
@@ -43,6 +44,7 @@ def create_train_test_datasets(dataset_from_database):
     return X_train, X_test, y_train, y_test
 
 
+@task(log_prints=True)
 def train_model(X_train, y_train, X_test, y_test):
     with mlflow.start_run() as run:
         mlflow.set_tag("model", "xgboost")
@@ -126,8 +128,8 @@ def train_model(X_train, y_train, X_test, y_test):
         return run.info.run_id
 
 
-def run():
-
+@flow(name="claim_status_prediction_flow")
+def main_flow()():
     np.random.seed(1889)
 
     os.environ["AWS_PROFILE"] = "mlops-user"  # AWS profile name
@@ -135,17 +137,11 @@ def run():
     mlflow.set_tracking_uri(f"http://{TRACKING_SERVER_HOST}:5000")
 
     dataset_from_database = read_dataframe()
-
     X_train, X_test, y_train, y_test = create_train_test_datasets(dataset_from_database)
-
     run_id = train_model(X_train, y_train, X_test, y_test)
-    print(f"MLflow run_id: {run_id}")
+
     return run_id
     
 
 if __name__ == "__main__":
-
-    run_id = run()
-
-    with open("run_id.txt", "w") as f:
-        f.write(run_id)
+    main_flow()
