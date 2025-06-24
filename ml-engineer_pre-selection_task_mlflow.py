@@ -2,7 +2,6 @@
 # coding: utf-8
 
 import os
-import pickle
 from pathlib import Path
 
 import numpy as np
@@ -113,9 +112,6 @@ def train_model(X_train, y_train, X_test, y_test, artifact_path):
             **best_params
             )
         model.fit(X_train, y_train, eval_set=eval_set, verbose=False)
-
-        with open('models/xgboost.bin', 'wb') as f_out:
-            pickle.dump(model, f_out)
 
         # Model evaluation
         train_class_preds = model.predict(X_train)
