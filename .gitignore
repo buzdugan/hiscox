@@ -1,0 +1,17 @@
+# mlflow artifacts locally
+models/
+mlruns/
+mlartifacts/
+mlflow.db
+
+# local data
+data/
+
+# notebook checkpoints
+.ipynb_checkpoints
+
+# caches
+__pycache__
+
+# MacOS
+.DS_Store
