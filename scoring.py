@@ -38,8 +38,9 @@ def read_dataframe(file_path):
 
 @task(name="load_model", log_prints=True)
 def load_model(run_id):
-    prod_model = f's3://mlflow-artifacts-remote-hiscox/1/models/{run_id}/artifacts/'
+    # prod_model = f's3://mlflow-artifacts-remote-hiscox/1/models/{run_id}/artifacts/'
     # prod_model = f'mlartifacts/2/models/{run_id}/artifacts/'
+    prod_model = f'artifacts_aws/'
     model = mlflow.pyfunc.load_model(prod_model)
     return model
 
@@ -62,12 +63,13 @@ def score_claim_status():
 
     s3_bucket_block = S3Bucket.load("mlops-s3-bucket")
     s3_bucket_block.download_folder_to_path(from_folder="data", to_folder="data")
+    s3_bucket_block.download_folder_to_path(from_folder=f"1/models/{RUN_ID}/artifacts", to_folder="artifacts_aws")
 
     yesterday = datetime.now() - timedelta(1)
     yesterday_str = yesterday.strftime('%Y_%m_%d')
 
     input_file_path = Path("data/dataset_from_database.csv")
-    yesterday_input_file_path = f"{input_file_path.stem}_{yesterday_str}.csv"
+    yesterday_input_file_path = f"{input_file_path.with_suffix('')}_{yesterday_str}.csv"
     output_file_path = Path(f"data/scored_dataset_{yesterday_str}.csv")
 
     print(f"Reading yesterday data from {yesterday_input_file_path}...")
