@@ -63,7 +63,7 @@ def score_claim_status():
     output_file_path = Path("data/scored_dataset.csv")
 
     yesterday = datetime.now() - timedelta(1)
-    yesterday_input_file_path = f"{input_file_path}_{yesterday.strftime('%Y-%m-%d')}.csv"
+    yesterday_input_file_path = f"{input_file_path[:-4]}_{yesterday.strftime('%Y-%m-%d')}.csv"
 
     print(f"Reading yesteraday data from {yesterday_input_file_path}...")
     create_daily_data(input_file_path, yesterday_input_file_path)
