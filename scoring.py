@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 
 import pandas as pd
 import mlflow
-
+from mlflow.tracking import MlflowClient
 from prefect import flow, task
 from prefect_aws import S3Bucket
 
@@ -36,6 +36,30 @@ def read_dataframe(file_path):
     return df
 
 
+# Version 2 - get production model run_id from registry
+@task(name="get_production_model", log_prints=True)
+def get_prod_model(client, model_name):
+    # Get all registered models for model name
+    reg_models = client.search_registered_models(
+        filter_string=f"name='{model_name}'"
+    )
+
+    # Get production model run id
+    prod_model_run_id = None
+    for reg_model in reg_models:
+        for model_version in reg_model.latest_versions:
+            if model_version.current_stage == 'Production':
+                prod_model_run_id = model_version.run_id
+                break
+
+    if prod_model_run_id:
+        print(f"Production model run_id for {model_name}: {prod_model_run_id}")
+        return prod_model_run_id
+    else:   
+        print(f"No production model found for {model_name}.")
+
+
+# Version 1 - we know the model run_id
 @task(name="load_model", log_prints=True)
 def load_model(run_id):
     # prod_model = f's3://mlflow-artifacts-remote-hiscox/1/models/{run_id}/artifacts/'
@@ -58,12 +82,26 @@ def apply_model(model, run_id, df, output_path):
 @flow(name="claim_status_scoring_flow", log_prints=True)
 def score_claim_status():
 
-    RUN_ID = os.getenv('RUN_ID', "m-a2dd0166170844ecab99d852d6ce412d") # model in S3 bucket
+    # Version 1
+    # RUN_ID = os.getenv('RUN_ID', "m-a2dd0166170844ecab99d852d6ce412d") # model in S3 bucket
     # RUN_ID = "m-9eead17988824cac85cb40c965964150"  # model locally downloaded
 
-    s3_bucket_block = S3Bucket.load("mlops-s3-bucket")
-    s3_bucket_block.download_folder_to_path(from_folder="data", to_folder="data")
-    s3_bucket_block.download_folder_to_path(from_folder=f"1/models/{RUN_ID}/artifacts", to_folder="artifacts_aws")
+    # Version 2
+    # print("Loading aws profile...")
+    # os.environ["AWS_PROFILE"] = "mlops-user"  # AWS profile name
+    # tracking_server_host = "ec2-13-218-161-214.compute-1.amazonaws.com" # public DNS of the EC2 instance
+    # mlflow_tracking_uri = f"http://{tracking_server_host}:5000"
+    # mlflow_tracking_uri = "http://127.0.0.1:5000" # run locally
+    mlflow_tracking_uri = "sqlite:///mlflow.db"
+    experiment_name = "claims_status"
+    model_name = f"{experiment_name}_classifier"
+
+    print("Connecting to mlflow registry server...")
+    client = MlflowClient(mlflow_tracking_uri)
+
+    # s3_bucket_block = S3Bucket.load("mlops-s3-bucket")
+    # s3_bucket_block.download_folder_to_path(from_folder="data", to_folder="data")
+    # s3_bucket_block.download_folder_to_path(from_folder=f"1/models/{RUN_ID}/artifacts", to_folder="artifacts_aws")
 
     yesterday = datetime.now() - timedelta(1)
     yesterday_str = yesterday.strftime('%Y_%m_%d')
@@ -78,11 +116,14 @@ def score_claim_status():
     print(f"Reading data from {yesterday_input_file_path}...")
     df = read_dataframe(yesterday_input_file_path) 
 
-    print(f"Loading model with run_id: {RUN_ID}...")
-    model = load_model(RUN_ID)
+    print(f"Getting production model from registry...")
+    run_id = get_prod_model(client, model_name)
 
-    print(f"Scoring the data using model with run_id: {RUN_ID}...")
-    apply_model(model, RUN_ID, df, output_file_path)
+    print(f"Loading model with run_id: {run_id}...")
+    model = load_model(run_id)
+
+    print(f"Scoring the data using model with run_id: {run_id}...")
+    apply_model(model, run_id, df, output_file_path)
     print(f"Scored the data.")
 
 
