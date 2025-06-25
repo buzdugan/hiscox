@@ -38,14 +38,12 @@ def load_model(run_id):
 
 
 @task(name="apply_model", log_prints=True)
-def apply_model(input_file, run_id, output_file):
-
-    df = read_dataframe(input_file)    
-    model = load_model(run_id)
+def apply_model(model, run_id, df, output_file):
 
     df['predicted_claim_status'] = model.predict(df)
     df['model_run_id'] = run_id
     
+    print(f"Saving the predictions to {output_file}...")
     df.to_csv(output_file, index=False)
 
 
@@ -58,8 +56,14 @@ def score_claim_status():
     input_file_path = Path("data/dataset_from_database.csv")
     output_file_path = Path("data/scored_dataset.csv")
 
+    print(f"Reading data from {input_file_path}...")
+    df = read_dataframe(input_file_path) 
+
+    print(f"Loading model with run_id: {RUN_ID}...")
+    model = load_model(RUN_ID)
+
     print(f"Scoring the data using model with run_id: {RUN_ID}...")
-    apply_model(input_file_path, RUN_ID, output_file_path)
+    apply_model(model, RUN_ID, df, output_file_path)
     print(f"Scored the data.")
 
 
