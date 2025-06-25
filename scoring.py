@@ -9,6 +9,7 @@ import pandas as pd
 import mlflow
 
 from prefect import flow, task
+from prefect_aws import S3Bucket
 
 
 @task(name="create_daily_data", log_prints=True)
@@ -59,11 +60,15 @@ def score_claim_status():
     RUN_ID = os.getenv('RUN_ID', "m-a2dd0166170844ecab99d852d6ce412d") # model in S3 bucket
     # RUN_ID = "m-9eead17988824cac85cb40c965964150"  # model locally downloaded
 
-    input_file_path = Path("data/dataset_from_database.csv")
-    output_file_path = Path("data/scored_dataset.csv")
+    s3_bucket_block = S3Bucket.load("mlops-s3-bucket")
+    s3_bucket_block.download_folder_to_path(from_folder="data", to_folder="data")
 
     yesterday = datetime.now() - timedelta(1)
-    yesterday_input_file_path = f"{input_file_path.stem}_{yesterday.strftime('%Y_%m_%d')}.csv"
+    yesterday_str = yesterday.strftime('%Y_%m_%d')
+
+    input_file_path = Path("data/dataset_from_database.csv")
+    yesterday_input_file_path = f"{input_file_path.stem}_{yesterday_str}.csv"
+    output_file_path = Path(f"data/scored_dataset_{yesterday_str}.csv")
 
     print(f"Reading yesterday data from {yesterday_input_file_path}...")
     create_daily_data(input_file_path, yesterday_input_file_path)
