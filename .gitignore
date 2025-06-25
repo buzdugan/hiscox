@@ -4,8 +4,8 @@ mlruns/
 mlartifacts/
 mlflow.db
 
-# local data
-data/
+# # local data
+# data/
 
 # notebook checkpoints
 .ipynb_checkpoints
