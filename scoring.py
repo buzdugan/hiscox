@@ -16,7 +16,7 @@ def create_daily_data(file_path, output_path):
     df = pd.read_csv(file_path)
     df.drop(columns=['claim_status'], inplace=True)
 
-    df.head(10).to_csv(output_path)
+    df.head(10).to_csv(output_path, index=False)
 
 
 @task(name="read_data", retries=3, retry_delay_seconds=2)
