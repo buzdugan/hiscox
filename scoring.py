@@ -37,8 +37,8 @@ def read_dataframe(file_path):
 
 @task(name="load_model", log_prints=True)
 def load_model(run_id):
-    # prod_model = f's3://mlflow-artifacts-remote-hiscox/1/models/{run_id}/artifacts/'
-    prod_model = f'mlartifacts/2/models/{run_id}/artifacts/'
+    prod_model = f's3://mlflow-artifacts-remote-hiscox/1/models/{run_id}/artifacts/'
+    # prod_model = f'mlartifacts/2/models/{run_id}/artifacts/'
     model = mlflow.pyfunc.load_model(prod_model)
     return model
 
@@ -56,8 +56,8 @@ def apply_model(model, run_id, df, output_path):
 @flow(name="claim_status_scoring_flow", log_prints=True)
 def score_claim_status():
 
-    # RUN_ID = os.getenv('RUN_ID', "m-a2dd0166170844ecab99d852d6ce412d") # model in S3 bucket
-    RUN_ID = "m-9eead17988824cac85cb40c965964150"  # model locally downloaded
+    RUN_ID = os.getenv('RUN_ID', "m-a2dd0166170844ecab99d852d6ce412d") # model in S3 bucket
+    # RUN_ID = "m-9eead17988824cac85cb40c965964150"  # model locally downloaded
 
     input_file_path = Path("data/dataset_from_database.csv")
     output_file_path = Path("data/scored_dataset.csv")
