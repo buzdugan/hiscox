@@ -1,0 +1,8 @@
+awscli==1.40.40
+boto3==1.38.41
+mlflow==3.1.0
+pandas==2.3.0
+prefect==3.4.6
+prefect-aws==0.5.10
+scikit-learn==1.7.0
+xgboost==3.0.2
