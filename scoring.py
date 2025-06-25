@@ -7,11 +7,10 @@ from pathlib import Path
 import pandas as pd
 import mlflow
 
-# from prefect import flow, task
-# from prefect_aws import S3Bucket
+from prefect import flow, task
 
 
-# @task(name="read_data", retries=3, retry_delay_seconds=2)
+@task(name="read_data", retries=3, retry_delay_seconds=2)
 def read_dataframe(file_path):
     dataset_from_database = pd.read_csv(file_path)
     dataset_from_database = dataset_from_database.head(10)
@@ -30,7 +29,7 @@ def read_dataframe(file_path):
     return dataset_from_database
 
 
-# @task(name="load_model", retries=3, retry_delay_seconds=2)
+@task(name="load_model", log_prints=True)
 def load_model(run_id):
     # prod_model = f's3://mlflow-artifacts-remote-hiscox/1/models/{run_id}/artifacts/'
     prod_model = f'mlartifacts/2/models/{run_id}/artifacts/'
@@ -38,7 +37,7 @@ def load_model(run_id):
     return model
 
 
-# @task(name="apply_model", retries=3, retry_delay_seconds=2)
+@task(name="apply_model", log_prints=True)
 def apply_model(input_file, run_id, output_file):
 
     df = read_dataframe(input_file)    
@@ -47,12 +46,11 @@ def apply_model(input_file, run_id, output_file):
     df['predicted_claim_status'] = model.predict(df)
     df['model_run_id'] = run_id
     
-    # df.to_parquet(output_file, index=False)
     df.to_csv(output_file, index=False)
 
 
-# @flow(name="claim_status_classification_flow")
-def predict_claim_status():
+@flow(name="claim_status_scoring_flow", log_prints=True)
+def score_claim_status():
 
     # RUN_ID = os.getenv('RUN_ID', "m-a2dd0166170844ecab99d852d6ce412d") # model in S3 bucket
     RUN_ID = "m-9eead17988824cac85cb40c965964150"  # model locally downloaded
@@ -66,4 +64,4 @@ def predict_claim_status():
 
 
 if __name__ == "__main__":
-    predict_claim_status()
+    score_claim_status()
