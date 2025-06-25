@@ -3,6 +3,7 @@
 
 import os
 from pathlib import Path
+from datetime import datetime, timedelta
 
 import pandas as pd
 import mlflow
@@ -10,23 +11,28 @@ import mlflow
 from prefect import flow, task
 
 
+@task(name="create_daily_data", log_prints=True)
+def create_daily_data(file_path, output_path):
+    df = pd.read_csv(file_path)
+    df.drop(columns=['claim_status'], inplace=True)
+
+    df.head(10).to_csv(output_path)
+
+
 @task(name="read_data", retries=3, retry_delay_seconds=2)
 def read_dataframe(file_path):
-    dataset_from_database = pd.read_csv(file_path)
-    dataset_from_database = dataset_from_database.head(10)
-    # dataset_from_database = collect_from_database(f"SELECT * FROM CLAIMS.DS_DATASET")
+    df = pd.read_csv(file_path)
     
-    dataset_from_database.drop(columns=['claim_status'], inplace=True)
-    dataset_from_database.drop(columns=['family_history_3', 'employment_type'], inplace=True)
+    df.drop(columns=['family_history_3', 'employment_type'], inplace=True)
     non_numerical = ['gender', 'marital_status', 'occupation', 'location', 'prev_claim_rejected', 
                     'known_health_conditions', 'uk_residence', 'family_history_1', 'family_history_2', 
                     'family_history_4', 'family_history_5', 'product_var_1', 'product_var_2', 
                     'product_var_3', 'health_status', 'driving_record', 'previous_claim_rate', 
                     'education_level', 'income level', 'n_dependents']
     for column in non_numerical:
-        dataset_from_database[column] = dataset_from_database[column].astype('category')
+        df[column] = df[column].astype('category')
 
-    return dataset_from_database
+    return df
 
 
 @task(name="load_model", log_prints=True)
@@ -38,13 +44,13 @@ def load_model(run_id):
 
 
 @task(name="apply_model", log_prints=True)
-def apply_model(model, run_id, df, output_file):
+def apply_model(model, run_id, df, output_path):
 
     df['predicted_claim_status'] = model.predict(df)
     df['model_run_id'] = run_id
     
-    print(f"Saving the predictions to {output_file}...")
-    df.to_csv(output_file, index=False)
+    print(f"Saving the predictions to {output_path}...")
+    df.to_csv(output_path, index=False)
 
 
 @flow(name="claim_status_scoring_flow", log_prints=True)
@@ -56,8 +62,14 @@ def score_claim_status():
     input_file_path = Path("data/dataset_from_database.csv")
     output_file_path = Path("data/scored_dataset.csv")
 
-    print(f"Reading data from {input_file_path}...")
-    df = read_dataframe(input_file_path) 
+    yesterday = datetime.now() - timedelta(1)
+    yesterday_input_file_path = f"{input_file_path}_{yesterday.strftime('%Y-%m-%d')}.csv"
+
+    print(f"Reading yesteraday data from {yesterday_input_file_path}...")
+    create_daily_data(input_file_path, yesterday_input_file_path)
+
+    print(f"Reading data from {yesterday_input_file_path}...")
+    df = read_dataframe(yesterday_input_file_path) 
 
     print(f"Loading model with run_id: {RUN_ID}...")
     model = load_model(RUN_ID)
