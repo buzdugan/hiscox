@@ -3,9 +3,11 @@ models/
 mlruns/
 mlartifacts/
 mlflow.db
+artifacts_aws/
 
-# # local data
-# data/
+# # local data for inference and scored
+data/dataset_from_database_*
+data/scored*
 
 # notebook checkpoints
 .ipynb_checkpoints
