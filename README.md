@@ -104,8 +104,8 @@ Run the below
 ```bash
 pip install pipenv
 pipenv shell
+pipenv install
 ```
-This will automatically install the packages in the **Pipfile** file.
 
 
 ## Run the Training
