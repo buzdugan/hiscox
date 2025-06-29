@@ -85,7 +85,7 @@ def hyperparameter_tuning(X_train, y_train, eval_set, eval_metrics):
         },
 
         cv=5,
-        n_iter=5,
+        n_iter=100, # Reduced to 5 from 100 to speed up the process
         verbose=False,
         scoring='roc_auc',
     )
@@ -229,7 +229,7 @@ def stage_model(client, run_id, model_name):
             print(f'Archived version {trained_model_version} of {model_name} model.')
     
 
-@flow(name="claim_status_classification_flow")
+@flow(name="claim_status_classification_flow_local")
 def main_flow():
     np.random.seed(1889)
 
