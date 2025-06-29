@@ -24,7 +24,7 @@ deployments:
 # training.py in the cloud
 - name: "claims_status_classification"
   description: "Cloud version of claims_status_classification"
-  schedule: {}
+  schedule:
     cron: "00 06 2 * *"
     timezone: "BST"
   flow_name: "claim_status_classification_flow"
@@ -36,7 +36,7 @@ deployments:
 # training_local.py running locally
 - name: "claims_status_classification_local"
   description: "Local version of claims_status_classification_local"
-  schedule: {}
+  schedule:
     cron: "00 06 2 * *"
     timezone: "BST"
   flow_name: "claim_status_classification_flow_local"
@@ -46,15 +46,12 @@ deployments:
     work_queue_name: null
 
 - name: "claims_status_scoring"
-  version: null
-  tags: []
-  description: null
-  schedule: {}
-    # cron: "00 06 * * *"
-  flow_name: null
+  description: "Local version of claims_status_scoring"
+  schedule:
+    cron: "00 06 * * *"
+  flow_name: "claim_status_scoring_flow"
   entrypoint: "scoring.py:score_claim_status"
   parameters: {}
   work_pool:
     name: hiscox_pool
     work_queue_name: null
-    job_variables: {}
