@@ -56,6 +56,12 @@ At this point, the current model orchestration can be done in a local Prefect se
 
 ## Setup the Local Environment
 Create virtual environment and install requirements.txt.
+Run the below
+```bash
+pip install pipenv
+pipenv shell
+pipenv install
+```
 
 ## Run the MLFlow Server
 ```bash
