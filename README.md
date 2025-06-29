@@ -47,12 +47,15 @@ In the final version of the code, the data used for training is also stored in t
 At this point, the current model orchestration can be done in a local Prefect server
 
 
-# Steps to Replicate the Project - Version 1 Run locally
+# Steps to Replicate the Project - Version 1. Run locally
+For the purpose of testing the scoring_local.py script locally with Prefect, you will need to fork this repo and push your own **mlartifacts** folder that gets generated after the model train to the repo. 
+This is because Prefect pulls the code from the github repo and needs all the data and artifacts there.
+
 - Setup the Local Environment
 - Run the MLFlow Server
 - Run the Prefect Server
-- Create and Run the Deployments
-
+- Create and Run the Training Deployment
+- Create and Run the Scoring Deployment
 
 ## Setup the Local Environment
 Create virtual environment and install requirements.txt.
@@ -68,6 +71,8 @@ pipenv install
 mlflow ui --backend-store-uri sqlite:///mlflow.db
 ```
 Go to http://127.0.0.1:5000 to access the server.
+If we don't specify a local path to the model artifacts, by default MLFlow will save the experiment and runs in the local folder in 
+**mlartifacts/<experiment_id>/<run_id>/artifacts/**.
 
 ## Run the Prefect Server
 Open new terminal and activate the virtual environment.
@@ -75,8 +80,9 @@ Open new terminal and activate the virtual environment.
 pipenv shell
 prefect server start
 ```
+Go to http://127.0.0.1:4200 to access the server.
 
-## Create and Run the Deployments
+## Create and Run the Training Deployment
 Open new terminal and activate the virtual environment.
 ```bash
 pipenv shell
@@ -109,9 +115,29 @@ This will create a new model, but because the dataset is the same, the metrics w
   <img width="80%" src="images/mlflow_training_local_registry_2.png" alt="MLFlow training_local registry 1">
 </p>
 
+After you've run the training deployment, push the **mlartifacts** folder that got generated to the repo. 
+This is because Prefect pulls the code from the github repo and needs all the data and artifacts there in order to find the model for scoring.
 
 
-# Steps to Replicate the Project - Version 2 Run partially in the Cloud
+## Create and Run the Scoring Deployment
+```bash
+prefect deploy deployment/scoring_local.py:score_claim_status -n claims_status_scoring_local -p hiscox_pool
+prefect worker start -p hiscox_pool
+```
+
+Open new terminal and activate the virtual environment.
+```bash
+pipenv shell
+prefect deployment run 'claim_status_scoring_flow/claims_status_scoring_local'
+```
+<p align="center">
+  <img width="80%" src="images/prefect_server_scoring_local.png" alt="Prefect scoring_local run">
+</p>
+You should now have 2 new datasets in the data folder, **dataset_from_database_<today_date>.csv** and **scored_dataset_<today_date>.csv**.
+
+
+
+# Steps to Replicate the Project - Version 2. Run partially in the Cloud
 - Setup the Cloud Environment
 - Setup the Local Environment
 - Run the Training
