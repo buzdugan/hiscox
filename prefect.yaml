@@ -26,7 +26,7 @@ deployments:
   description: "Cloud version of claims_status_classification"
   schedule:
     cron: "00 06 2 * *"
-    timezone: "BST"
+    timezone: "Europe/London"
   flow_name: "claim_status_classification_flow"
   entrypoint: "training.py:main_flow"
   work_pool:
@@ -38,7 +38,7 @@ deployments:
   description: "Local version of claims_status_classification_local"
   schedule:
     cron: "00 06 2 * *"
-    timezone: "BST"
+    timezone: "Europe/London"
   flow_name: "claim_status_classification_flow_local"
   entrypoint: "training_local.py:main_flow"
   work_pool:
@@ -49,6 +49,7 @@ deployments:
   description: "Local version of claims_status_scoring"
   schedule:
     cron: "00 06 * * *"
+    timezone: "Europe/London"
   flow_name: "claim_status_scoring_flow"
   entrypoint: "scoring.py:score_claim_status"
   parameters: {}
