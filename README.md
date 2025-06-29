@@ -27,6 +27,7 @@ The order of the pipeline is as follows:
 ## Data Collection
 In a production environment, the training and daily data for scoring would be stored in a data warehouse.
 For the purpose of this task, the data is generated via the code provided and stored as a csv file which is loaded from the disk at training time.
+It is stored in **data/dataset_from_database.csv**
 
 ## Model Experimentation and Tracking
 I started experimenting the solution with the original jupyter notebook provided, ml-engineer_pre-selection_task.ipynb. 
@@ -49,6 +50,8 @@ At this point, the current model orchestration can be done in a local Prefect se
 # Steps to Replicate the Project
 - Setup the Cloud Environment
 - Setup the Local Environment
+- Run the Training
+- Run the Scoring
 
 ## Setup the Cloud Environment
 First, create a [free AWS account](https://aws.amazon.com/free/) if you don't already have one.
@@ -105,7 +108,7 @@ pipenv shell
 This will automatically install the packages in the **Pipfile** file.
 
 
-## Run **model_training/training.py**
+## Run the Training
 At this point in the project development, the workflow orchestration via a Prefect server needs be done locally, while the MLFlow server can be run on AWS.
 
 ### Launch the MLFlow server on AWS
@@ -135,6 +138,40 @@ The deployment is scheduled to run on day 2 of each month at 6am, but in order t
 This should run the **model_training/training.py** script.
 
 
+## Run the Scoring
+The daily scoring can be run as a deployment on the local Prefect server, similar to the training, or it can be run locally in a docker container.
+
+For the Prefect deployment, run 
+```bash
+prefect deploy deployment/scoring.py:score_claim_status -n claims_status_scoring -p hiscox_pool
+prefect worker start -p hiscox_pool
+```
+
+To run in a docker container without the workflow orchestration, first we need to build the docker image
+```bash
+docker build -f deployment/Dockerfile -t claim-status-scoring:v1 .
+```
+Then run the docker image	
+```bash
+docker run -it \
+	-v ~/.aws:/root/.aws \
+	-v ./data:/app/./data \
+    -v $(pwd)/deployment/scoring.py:/app/./scoring.py \
+	claim-status-scoring:v1 
+```
+If we run it as above, the daily data for scoring and the scored data will be created inside the container and we won't have access to them.
+
+Or we run it in debug mode to enter the container to see the output of the scoring, but we will need to launch the script from inside with
+```bash
+docker run -it \
+	--entrypoint /bin/bash \
+	-v ~/.aws:/root/.aws \
+	-v ./data:/app/./data \
+    -v $(pwd)/deployment/scoring.py:/app/./scoring.py \
+	claim-status-scoring:v1 
+
+python scoring.py
+```
 
 # Further Steps
 - use Prefect Cloud for workflow orchestration, rather than the local server
