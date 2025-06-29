@@ -47,7 +47,65 @@ In the final version of the code, the data used for training is also stored in t
 At this point, the current model orchestration can be done in a local Prefect server
 
 
-# Steps to Replicate the Project
+# Steps to Replicate the Project - Version 1 Run locally
+- Setup the Local Environment
+- Run the MLFlow Server
+- Run the Prefect Server
+- Create and Run the Deployments
+
+
+## Setup the Local Environment
+Create virtual environment and install requirements.txt.
+
+## Run the MLFlow Server
+```bash
+mlflow ui --backend-store-uri sqlite:///mlflow.db
+```
+Go to http://127.0.0.1:5000 to access the server.
+
+## Run the Prefect Server
+Open new terminal and activate the virtual environment.
+```bash
+pipenv shell
+prefect server start
+```
+
+## Create and Run the Deployments
+Open new terminal and activate the virtual environment.
+```bash
+pipenv shell
+
+prefect deploy model_training/training_local.py:main_flow -n claims_status_classification_local -p hiscox_pool
+prefect worker start --pool 'hiscox_pool'
+```
+
+Open new terminal and activate the virtual environment.
+```bash
+pipenv shell
+prefect deployment run 'claim_status_classification_flow/claims_status_classification_local'
+```
+
+<p align="center">
+  <img width="80%" src="images/prefect_server_training_local.png" alt="Prefect training_local run">
+</p>
+
+<p align="center">
+  <img width="80%" src="images/mlflow_training_local_1.png" alt="MLFlow training_local tracking 1">
+</p>
+
+<p align="center">
+  <img width="80%" src="images/mlflow_training_local_registry_1.png" alt="MLFlow training_local registry 1">
+</p>
+
+You can run the deployment again either from the terminal or from the UI.
+This will create a new model, but because the dataset is the same, the metrics will be the same, therefore it will be Archived.
+<p align="center">
+  <img width="80%" src="images/mlflow_training_local_registry_2.png" alt="MLFlow training_local registry 1">
+</p>
+
+
+
+# Steps to Replicate the Project - Version 2 Run partially in the Cloud
 - Setup the Cloud Environment
 - Setup the Local Environment
 - Run the Training
@@ -112,12 +170,18 @@ pipenv install
 At this point in the project development, the workflow orchestration via a Prefect server needs be done locally, while the MLFlow server can be run on AWS.
 
 ### Launch the MLFlow server on AWS
-Launch the tracking server in EC2 and set S3 bucket as storage
+Launch the tracking server in EC2 and set S3 bucket as storage. Replace with your own variables.
 ```bash
 mlflow server -h 0.0.0.0 -p 5000 --backend-store-uri postgresql://DB_USER:DB_PASSWORD@DB_ENDPOINT:5432/DB_NAME --default-artifact-root s3://S3_BUCKET_NAME
 ```
 
 ### Launch the Prefect server locally
+For Prefect to access the S3 Bucket, we need to first create an  AWS credential block and an S3 Bucket block. Run 
+```bash
+python create_s3_bucket_block.py
+```
+
+Launch the server.
 ```bash
 prefect server start
 ```
@@ -172,6 +236,8 @@ docker run -it \
 
 python scoring.py
 ```
+
+
 
 # Further Steps
 - use Prefect Cloud for workflow orchestration, rather than the local server
