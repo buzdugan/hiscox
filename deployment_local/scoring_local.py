@@ -8,10 +8,10 @@ from datetime import datetime, timedelta
 import pandas as pd
 import mlflow
 from mlflow.tracking import MlflowClient
-from prefect import flow, task
+# from prefect import flow, task
 
 
-@task(name="create_daily_data", log_prints=True)
+#@task(name="create_daily_data", log_prints=True)
 def create_daily_data(file_path, output_path):
     df = pd.read_csv(file_path)
     df.drop(columns=['claim_status'], inplace=True)
@@ -19,7 +19,7 @@ def create_daily_data(file_path, output_path):
     df.sample(n=1200, random_state=42).to_csv(output_path, index=False)
 
 
-@task(name="read_data", retries=3, retry_delay_seconds=2)
+#@task(name="read_data", retries=3, retry_delay_seconds=2)
 def read_dataframe(file_path):
     df = pd.read_csv(file_path)
     
@@ -35,7 +35,7 @@ def read_dataframe(file_path):
     return df
 
 
-@task(name="get_production_model", log_prints=True)
+#@task(name="get_production_model", log_prints=True)
 def get_prod_model(client, model_name):
     # Get all registered models for model name
     reg_models = client.search_registered_models(
@@ -59,7 +59,7 @@ def get_prod_model(client, model_name):
         print(f"No production model found for {model_name}.")
 
 
-@task(name="load_model", log_prints=True)
+#@task(name="load_model", log_prints=True)
 def load_model(model_id, experiment_id):
     prod_model = f"mlartifacts/{experiment_id}/models/{model_id}/artifacts/"
 
@@ -68,7 +68,7 @@ def load_model(model_id, experiment_id):
     return model
 
 
-@task(name="apply_model", log_prints=True)
+#@task(name="apply_model", log_prints=True)
 def apply_model(model, run_id, df, output_path):
 
     df['predicted_claim_status'] = model.predict(df)
@@ -78,7 +78,7 @@ def apply_model(model, run_id, df, output_path):
     df.to_csv(output_path, index=False)
 
 
-@flow(name="claim_status_scoring_flow_local", log_prints=True)
+#@flow(name="claim_status_scoring_flow_local", log_prints=True)
 def score_claim_status():
 
     mlflow_tracking_uri = "http://127.0.0.1:5000"
@@ -90,18 +90,14 @@ def score_claim_status():
     experiment_id = client.get_experiment_by_name(experiment_name).experiment_id
     print(f"Experiment ID for {experiment_name}: {experiment_id}")
 
-    # Pass the output directory from environment variable for prefect to write locally
-    prefect_data_folder = os.getenv("PREFECT_DATA_FOLDER", "/tmp/prefect_output")
-    os.makedirs(prefect_data_folder, exist_ok=True)
-
     yesterday = datetime.now() - timedelta(1)
     yesterday_str = yesterday.strftime('%Y_%m_%d')
 
-    input_file_path = Path(f"{prefect_data_folder}/dataset_from_database.csv")
+    input_file_path = Path("data/dataset_from_database.csv")
     yesterday_input_file_path = f"{input_file_path.with_suffix('')}_{yesterday_str}.csv"
-    output_file_path = Path(f"{prefect_data_folder}/scored_dataset_{yesterday_str}.csv")
+    output_file_path = Path(f"data/scored_dataset_{yesterday_str}.csv")
 
-    print(f"Reading yesterday data from {yesterday_input_file_path}...")
+    print(f"Creating yesterday data from {yesterday_input_file_path}...")
     create_daily_data(input_file_path, yesterday_input_file_path)
 
     print(f"Reading data from {yesterday_input_file_path}...")

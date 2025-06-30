@@ -104,7 +104,7 @@ def score_claim_status():
     yesterday_input_file_path = f"{input_file_path.with_suffix('')}_{yesterday_str}.csv"
     output_file_path = Path(f"data/scored_dataset_{yesterday_str}.csv")
 
-    print(f"Reading yesterday data from {yesterday_input_file_path}...")
+    print(f"Creating yesterday data from {yesterday_input_file_path}...")
     create_daily_data(input_file_path, yesterday_input_file_path)
 
     print(f"Reading data from {yesterday_input_file_path}...")
