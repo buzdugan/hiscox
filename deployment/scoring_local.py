@@ -78,7 +78,7 @@ def apply_model(model, run_id, df, output_path):
     df.to_csv(output_path, index=False)
 
 
-@flow(name="claim_status_scoring_flow", log_prints=True)
+@flow(name="claim_status_scoring_flow_local", log_prints=True)
 def score_claim_status():
 
     mlflow_tracking_uri = "http://127.0.0.1:5000"
