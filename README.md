@@ -94,7 +94,7 @@ prefect worker start --pool 'hiscox_pool'
 Open new terminal and activate the virtual environment.
 ```bash
 pipenv shell
-prefect deployment run 'claim_status_classification_flow/claims_status_classification_local'
+prefect deployment run 'claim_status_classification_flow_local/claims_status_classification_local'
 ```
 
 <p align="center">
