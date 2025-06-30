@@ -128,7 +128,7 @@ prefect worker start -p hiscox_pool
 Open new terminal and activate the virtual environment.
 ```bash
 pipenv shell
-prefect deployment run 'claim_status_scoring_flow/claims_status_scoring_local'
+prefect deployment run 'claim_status_scoring_flow_local/claims_status_scoring_local'
 ```
 <p align="center">
   <img width="80%" src="images/prefect_server_scoring_local.png" alt="Prefect scoring_local run">
