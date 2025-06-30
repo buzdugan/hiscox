@@ -90,12 +90,16 @@ def score_claim_status():
     experiment_id = client.get_experiment_by_name(experiment_name).experiment_id
     print(f"Experiment ID for {experiment_name}: {experiment_id}")
 
+    # Pass the output directory from environment variable for prefect to write locally
+    prefect_data_folder = os.getenv("PREFECT_DATA_FOLDER", "/tmp/prefect_output")
+    os.makedirs(prefect_data_folder, exist_ok=True)
+
     yesterday = datetime.now() - timedelta(1)
     yesterday_str = yesterday.strftime('%Y_%m_%d')
 
-    input_file_path = Path("data/dataset_from_database.csv")
+    input_file_path = Path(f"{prefect_data_folder}/dataset_from_database.csv")
     yesterday_input_file_path = f"{input_file_path.with_suffix('')}_{yesterday_str}.csv"
-    output_file_path = Path(f"data/scored_dataset_{yesterday_str}.csv")
+    output_file_path = Path(f"{prefect_data_folder}/scored_dataset_{yesterday_str}.csv")
 
     print(f"Reading yesterday data from {yesterday_input_file_path}...")
     create_daily_data(input_file_path, yesterday_input_file_path)
