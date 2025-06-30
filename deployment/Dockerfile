@@ -11,6 +11,6 @@ COPY ["Pipfile", "Pipfile.lock", "./"]
 
 RUN pipenv install --system --deploy
 
-COPY ["deployment/scoring_local.py", "./"]
+COPY ["deployment/scoring.py", "./"]
 
-ENTRYPOINT ["python", "./scoring_local.py"]
+ENTRYPOINT ["python", "./scoring.py"]
