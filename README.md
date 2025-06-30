@@ -133,7 +133,7 @@ prefect deployment run 'claim_status_scoring_flow_local/claims_status_scoring_lo
 <p align="center">
   <img width="80%" src="images/prefect_server_scoring_local.png" alt="Prefect scoring_local run">
 </p>
-You should now have 2 new datasets in the data folder, **dataset_from_database_<today_date>.csv** and **scored_dataset_<today_date>.csv**.
+At this point the flow for scoring will run, and it will create 2 new datasets, dataset_from_database_<today_date>.csv and scored_dataset_<today_date>.csv. However, they are in the temporary prefect storage and I have yet to find a way to store them locally, but I have added a print file so you can see some output in the prefect server.
 
 
 
