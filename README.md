@@ -156,13 +156,16 @@ You need to set up the below, which in the current project are named as such
 - Initial database name: mlflow_db
 - DB_ENDPOINT: mlflow-database.cuvi8608k8ht.us-east-1.rds.amazonaws.com:5432/mlflow_db
 
-
 ### Setup the EC2 instance
 In AWS, create an RSA key-pair called **mlflow-key-pair.pem** and store it in the **.ssh/** folder locally.
 Run below to restrict the permissions on the .pem file to read-only by you, the file owner, otherwise you might get an error.
 ```bash
 chmod 400 ~/.ssh/mlflow-key-pair.pem
 ```
+Follow the course tutorial [here](https://www.youtube.com/watch?v=1ykg4YmbFVA&list=PL3MmuxUbc_hIUISrluw_A7wDSmfOhErJK) to add
+- Custom TCP 5000 to EC2 instance Security Group Inbound Rules
+- PostgreSQL 5432 for the EC2 instance Security Group to the RDS database Security Group Inbound Rules.
+
 Once the EC2 instance is running, you can either connect to it via the AWS provided terminal, by clicking "Connect" or via a local terminal by running:
 ```bash
 ssh -i ~/.ssh/mlflow-key-pair.pem ec2-user@<public_ip_address>
