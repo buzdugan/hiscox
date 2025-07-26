@@ -1,4 +1,4 @@
-artifact_path: mlflow-artifacts:/1/models/m-d73ae22ee8ec48748fe3ee7a8d26c8a9/artifacts
+artifact_path: mlflow-artifacts:/1/models/m-2f403bf5fdfe4ba4a512f4ce5cbdaac7/artifacts
 flavors:
   python_function:
     data: model.xgb
@@ -14,9 +14,9 @@ flavors:
     model_format: xgb
     xgb_version: 3.0.2
 mlflow_version: 3.1.0
-model_id: m-d73ae22ee8ec48748fe3ee7a8d26c8a9
-model_size_bytes: 367892
-model_uuid: m-d73ae22ee8ec48748fe3ee7a8d26c8a9
+model_id: m-2f403bf5fdfe4ba4a512f4ce5cbdaac7
+model_size_bytes: 517360
+model_uuid: m-2f403bf5fdfe4ba4a512f4ce5cbdaac7
 prompts: null
-run_id: 6011f60767c74cf1b77815a5614bc152
-utc_time_created: '2025-06-30 08:19:37.879043'
+run_id: 0801874130d748c3adc02e5d33138f3d
+utc_time_created: '2025-07-26 11:52:05.835346'
