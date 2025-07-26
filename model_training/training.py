@@ -233,8 +233,6 @@ def stage_model(client, run_id, model_name):
 def main_flow():
     np.random.seed(1889)
 
-    print("Loading aws profile...")
-    os.environ["AWS_PROFILE"] = "mlops-user"  # AWS profile name
     tracking_server_host = "ec2-54-221-148-124.compute-1.amazonaws.com" # public DNS of the EC2 instance
     mlflow_tracking_uri = f"http://{tracking_server_host}:5000"
     # mlflow_tracking_uri = "http://127.0.0.1:5000" # run locally
