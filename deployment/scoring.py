@@ -68,22 +68,14 @@ def load_model(model_id, experiment_id):
     return model
 
 
-# @task(name="apply_model", log_prints=True)
-# def apply_model(model, run_id, df, output_path):
-
-#     df['predicted_claim_status'] = model.predict(df)
-#     df['model_run_id'] = run_id
-    
-#     print(f"Saving the predictions to {output_path}...")
-#     df.to_csv(output_path, index=False)
-
-
 @task(name="apply_model", log_prints=True)
-def apply_model(model, run_id, df):
+def apply_model(model, run_id, df, output_path):
 
     df['predicted_claim_status'] = model.predict(df)
     df['model_run_id'] = run_id
-    return df
+    
+    print(f"Saving the predictions to {output_path}...")
+    df.to_csv(output_path, index=False)
 
 
 @flow(name="claim_status_scoring_flow", log_prints=True)
@@ -104,14 +96,13 @@ def score_claim_status():
     s3_bucket_block = S3Bucket.load("mlops-s3-bucket") # Store training data on S3 bucket
     # Download data from S3 bucket into prefect temp storage
     s3_bucket_block.download_folder_to_path(from_folder="data", to_folder="data") 
-    # s3_bucket_block.download_folder_to_path(from_folder=f"1/models/{RUN_ID}/artifacts", to_folder="artifacts_aws")
 
     yesterday = datetime.now() - timedelta(1)
     yesterday_str = yesterday.strftime('%Y_%m_%d')
 
     input_file_path = Path("data/dataset_from_database.csv")
     yesterday_input_file_path = f"{input_file_path.with_suffix('')}_{yesterday_str}.csv"
-    # output_file_path = Path(f"data/scored_dataset_{yesterday_str}.csv")
+    output_file_path = f's3://mlflow-artifacts-remote-hiscox/predictions/scored_dataset_{yesterday_str}.csv'
 
     print(f"Creating yesterday data from {yesterday_input_file_path}...")
     create_daily_data(input_file_path, yesterday_input_file_path)
@@ -126,15 +117,9 @@ def score_claim_status():
     model = load_model(model_id, experiment_id)
 
     print(f"Scoring the data using model with run_id = {run_id}...")
-    # apply_model(model, run_id, df, output_file_path)
-    prediction_df = apply_model(model, run_id, df)
+    apply_model(model, run_id, df, output_file_path)
     print(f"Scored the data.")
-
-    output_file = f's3://mlflow-artifacts-remote-hiscox/predictions/scored_dataset_{yesterday_str}.parquet'
-    prediction_df.to_parquet(
-        output_file, engine='pyarrow', compression=None, index=False
-    )
-
+    
 
 if __name__ == "__main__":
     score_claim_status()
