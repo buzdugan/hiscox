@@ -130,7 +130,7 @@ def score_claim_status():
     prediction_df = apply_model(model, run_id, df)
     print(f"Scored the data.")
 
-    output_file = f's3://predictions/scored_dataset_{yesterday_str}.parquet'
+    output_file = f's3://mlflow-artifacts-remote-hiscox/predictions/scored_dataset_{yesterday_str}.parquet'
     prediction_df.to_parquet(
         output_file, engine='pyarrow', compression=None, index=False
     )
