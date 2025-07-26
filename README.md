@@ -209,6 +209,7 @@ Launch the tracking server in EC2 and set S3 bucket as storage. Replace with you
 ```bash
 mlflow server -h 0.0.0.0 -p 5000 --backend-store-uri postgresql://DB_USER:DB_PASSWORD@DB_ENDPOINT:5432/DB_NAME --default-artifact-root s3://S3_BUCKET_NAME
 ```
+The MLFlow UI will be available at `http://<ec2_public_address>:5000`.
 
 ### Launch the Prefect server locally
 For Prefect to access the S3 Bucket, we need to first create an  AWS credential block and an S3 Bucket block. Run 
@@ -250,29 +251,12 @@ To run in a docker container without the workflow orchestration, first we need t
 ```bash
 docker build -f deployment/Dockerfile -t claim-status-scoring:v1 .
 ```
-Then run the docker image	
+Then run the docker image to create a parquet prediction file on the S3 bucket.
 ```bash
 docker run -it \
 	-v ~/.aws:/root/.aws \
-	-v ./data:/app/./data \
-    -v $(pwd)/deployment/scoring.py:/app/./scoring.py \
 	claim-status-scoring:v1 
 ```
-If we run it as above, the daily data for scoring and the scored data will be created inside the container and we won't have access to them.
-
-Or we run it in debug mode to enter the container to see the output of the scoring, but we will need to launch the script from inside with
-```bash
-docker run -it \
-	--entrypoint /bin/bash \
-	-v ~/.aws:/root/.aws \
-	-v ./data:/app/./data \
-    -v $(pwd)/deployment/scoring.py:/app/./scoring.py \
-	claim-status-scoring:v1 
-
-python scoring.py
-```
-
-
 
 # Further Steps
 - use Prefect Cloud for workflow orchestration, rather than the local server

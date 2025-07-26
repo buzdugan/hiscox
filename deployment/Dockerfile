@@ -11,6 +11,6 @@ COPY ["Pipfile", "Pipfile.lock", "./"]
 
 RUN pipenv install --system --deploy
 
-COPY ["deployment/scoring.py", "./"]
+COPY ["create_s3_bucket_block.py", "deployment/scoring.py", "./"]
 
-ENTRYPOINT ["python", "./scoring.py"]
+ENTRYPOINT ["sh", "-c", "python ./create_s3_bucket_block.py && python ./scoring.py"]
