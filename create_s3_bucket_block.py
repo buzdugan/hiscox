@@ -1,10 +1,14 @@
+import boto3
 from time import sleep
 from prefect_aws import S3Bucket, AwsCredentials
 
 
-def create_aws_creds_block():
+def create_aws_creds_block(profile_name, creds):
     aws_creds_block_obj = AwsCredentials(
-        profile_name="mlops-user"
+        profile_name=profile_name,
+        aws_access_key_id=creds.access_key,
+        aws_secret_access_key=creds.secret_key,
+        aws_session_token=creds.token
     )
     aws_creds_block_obj.save("mlops-aws-creds", overwrite=True)
 
@@ -19,6 +23,11 @@ def create_s3_bucket_block():
 
 
 if __name__ == "__main__":
-    create_aws_creds_block()
+
+    profile_name = "mlops-user" 
+    session = boto3.Session(profile_name=profile_name)
+    creds = session.get_credentials().get_frozen_credentials()
+
+    create_aws_creds_block(profile_name, creds)
     sleep(5)
     create_s3_bucket_block()
