@@ -75,7 +75,7 @@ def apply_model(model, run_id, df, output_path):
     df['model_run_id'] = run_id
     
     print(f"Saving the predictions to {output_path}...")
-    df.to_csv(output_path, index=False)
+    df.to_parquet(output_path, engine='pyarrow', compression=None, index=False)
 
 
 @flow(name="claim_status_scoring_flow", log_prints=True)
@@ -102,7 +102,7 @@ def score_claim_status():
 
     input_file_path = Path("data/dataset_from_database.csv")
     yesterday_input_file_path = f"{input_file_path.with_suffix('')}_{yesterday_str}.csv"
-    output_file_path = f's3://mlflow-artifacts-remote-hiscox/predictions/scored_dataset_{yesterday_str}.csv'
+    output_file_path = f's3://mlflow-artifacts-remote-hiscox/predictions/scored_dataset_{yesterday_str}.parquet'
 
     print(f"Creating yesterday data from {yesterday_input_file_path}...")
     create_daily_data(input_file_path, yesterday_input_file_path)
