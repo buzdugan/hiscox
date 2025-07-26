@@ -85,7 +85,7 @@ def hyperparameter_tuning(X_train, y_train, eval_set, eval_metrics):
         },
 
         cv=5,
-        n_iter=100, # Reduced to 5 from 100 to speed up the process
+        n_iter=5, # Reduced to 5 from 100 to speed up the process
         verbose=False,
         scoring='roc_auc',
     )
