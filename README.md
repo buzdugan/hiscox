@@ -211,7 +211,7 @@ mlflow server -h 0.0.0.0 -p 5000 --backend-store-uri postgresql://DB_USER:DB_PAS
 ```
 The MLFlow UI will be available at `http://<ec2_public_address>:5000`.
 
-### Launch the Prefect server locally
+### Version 1 - Launch the Prefect server locally
 For Prefect to access the S3 Bucket, we need to first create an  AWS credential block and an S3 Bucket block. Run 
 ```bash
 python create_s3_bucket_block.py
@@ -238,27 +238,7 @@ The deployment is scheduled to run on day 2 of each month at 6am, but in order t
 This should run the **model_training/training.py** script.
 
 
-## Run the Scoring
-The daily scoring can be run as a deployment on the local Prefect server, similar to the training, or it can be run locally in a docker container.
-
-For the Prefect deployment, run 
-```bash
-prefect deploy deployment/scoring.py:score_claim_status -n claims_status_scoring -p hiscox_pool
-prefect worker start -p hiscox_pool
-```
-
-To run in a docker container without the workflow orchestration, first we need to build the docker image
-```bash
-docker build -f deployment/Dockerfile -t claim-status-scoring:v1 .
-```
-Then run the docker image to create a parquet prediction file on the S3 bucket.
-```bash
-docker run -it \
-	-v ~/.aws:/root/.aws \
-	claim-status-scoring:v1 
-```
-
-### Launch Prefect Cloud
+### Version 2 - Launch Prefect Cloud
 Follow the instructions from [Prefect Cloud](https://docs.prefect.io/v3/get-started/quickstart#cloud) or [here](https://docs.prefect.io/v3/get-started/github-quickstart).
 
 In the browser, create an API key, then run the below to authenticate to a `<username>/<workspace>`
@@ -282,8 +262,28 @@ uvx prefect-cloud deploy model_training/training.py:main_flow \
 This will deploy to your Prefect Cloud workspace and use the registered S3 block.
 
 
+## Run the Scoring
+The daily scoring can be run as a deployment on the local Prefect server, similar to the training, or it can be run locally in a docker container.
+
+For the Prefect deployment, run 
+```bash
+prefect deploy deployment/scoring.py:score_claim_status -n claims_status_scoring -p hiscox_pool
+prefect worker start -p hiscox_pool
+```
+
+To run in a docker container without the workflow orchestration, first we need to build the docker image
+```bash
+docker build -f deployment/Dockerfile -t claim-status-scoring:v1 .
+```
+Then run the docker image to create a parquet prediction file on the S3 bucket.
+```bash
+docker run -it \
+	-v ~/.aws:/root/.aws \
+	claim-status-scoring:v1 
+```
+
+
 # Further Steps
-- use Prefect Cloud for workflow orchestration, rather than the local server
 - use Evidently.ai for model and data monitoring
 - containerize **model_training/training.py.**
 
