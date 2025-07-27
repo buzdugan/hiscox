@@ -258,6 +258,30 @@ docker run -it \
 	claim-status-scoring:v1 
 ```
 
+### Launch Prefect Cloud
+Follow the instructions from [Prefect Cloud](https://docs.prefect.io/v3/get-started/quickstart#cloud) or [here](https://docs.prefect.io/v3/get-started/github-quickstart).
+
+In the browser, create an API key, then run the below to authenticate to a `<username>/<workspace>`
+```bash
+prefect cloud login -k <api_key>
+```
+You can check the authentication with 
+```bash
+prefect config view
+```
+You should see "api.url" pointing to https://api.prefect.cloud/....
+Then run `python create_s3_bucket_block.py` to create AWS credential and S3 bucket blocks.
+
+Once the block is registered, run your deployment command:
+```bash
+uvx prefect-cloud deploy model_training/training.py:main_flow \
+    --from buzdugan/hiscox \
+    --name claims_status_classification \
+    --with-requirements requirements.txt
+```
+This will deploy to your Prefect Cloud workspace and use the registered S3 block.
+
+
 # Further Steps
 - use Prefect Cloud for workflow orchestration, rather than the local server
 - use Evidently.ai for model and data monitoring
