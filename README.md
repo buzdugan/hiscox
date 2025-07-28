@@ -283,7 +283,28 @@ docker run -it \
 ```
 
 
-# Further Steps
-- use Evidently.ai for model and data monitoring
-- containerize **model_training/training.py.**
+## Monitoring
+Evidently AI library is used for monitoring.
+Random data from the training set is used to simulate unseen data, then drift metrics are calculated at 5 random time intervals.
 
+To prepare PostgreSQL, Adminer and Grafana, run
+```bash
+docker compose -f .\monitoring\docker-compose.yml up --build -d
+```
+This can also be deployed to Amazon ECS.
+
+The local monitoring flow in prefect is loaded with
+```bash
+prefect deploy monitoring/evidently_metrics_calculation_local.py:batch_monitoring_backfill -n batch_monitoring_backfill_local -p hiscox_pool
+```
+
+
+# Further Steps
+- IaC via Terraform
+- containerize **model_training/training.py.**
+- unit tests
+- integration tests
+- linter and/or code formatter
+- Makefile
+- pre-commit hooks
+- CI/CD pipeline
