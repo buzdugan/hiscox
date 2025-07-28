@@ -176,11 +176,11 @@ def calculate_metrics_postgresql(curr, i, unseen_df, reference_data):
 
 	# If there's drift, retrain the model
 	# if result['metrics'][1]['value']['share'] >= 0.5:
-	# if result['metrics'][1]['value']['share'] >= 0.025:
-	# 	print(f"Drift detected, retraining model...")
-	# 	run_deployment(
-	# 		name='claim_status_classification_flow_local/claims_status_classification_local'
-	# 	)
+	if result['metrics'][1]['value']['share'] >= 0.025:
+		print(f"Drift detected, retraining model...")
+		run_deployment(
+			name='claim_status_classification_flow_local/claims_status_classification_local'
+		)
 
 	curr.execute(
 		"insert into drift_metrics(timestamp, prediction_drift, num_drifted_columns, share_missing_values) values (%s, %s, %s, %s)",
@@ -209,7 +209,7 @@ def batch_monitoring_backfill():
 	input_file_path = Path("data/dataset_from_database.csv")
 	reference_data = load_reference_data("data/reference.parquet")
 	print("Reference data loaded...")
-	print(reference_data.columns)
+	# print(reference_data.columns)
 	reference_data = apply_model_to_data(model, run_id, reference_data.drop(columns=['claim_status']))
 	print("Reference data scored...")
 
@@ -225,8 +225,7 @@ def batch_monitoring_backfill():
 
 			# Score unseen data
 			print(f"Scoring the data using model with run_id = {run_id}...")
-			# unseen_df = apply_model_to_data(model, run_id, unseen_df)
-			# apply_model_to_data(model, run_id, unseen_df)
+			unseen_df = apply_model_to_data(model, run_id, unseen_df)
 			print(f"Scored the data.")
 
 			with conn.cursor() as curr:
