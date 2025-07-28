@@ -225,7 +225,7 @@ def batch_monitoring_backfill():
 
 			# Score unseen data
 			print(f"Scoring the data using model with run_id = {run_id}...")
-			apply_model_to_data(model, run_id, unseen_df)
+			unseen_df = apply_model_to_data(model, run_id, unseen_df)
 			print(f"Scored the data.")
 
 			with conn.cursor() as curr:
