@@ -175,11 +175,12 @@ def calculate_metrics_postgresql(curr, i, unseen_df, reference_data):
 	share_missing_values = result['metrics'][2]['value']['share']
 
 	# If there's drift, retrain the model
-	if result['metrics'][1]['value']['share'] >= 0.5:
+	# if result['metrics'][1]['value']['share'] >= 0.5:
+	if result['metrics'][1]['value']['share'] >= 0.025:
 		print(f"Drift detected, retraining model...")
-		# run_deployment(
-		# 	name='claim_status_classification_flow/claims_status_classification'
-		# )
+		run_deployment(
+			name='claim_status_classification_flow/claims_status_classification'
+		)
 
 	curr.execute(
 		"insert into drift_metrics(timestamp, prediction_drift, num_drifted_columns, share_missing_values) values (%s, %s, %s, %s)",
