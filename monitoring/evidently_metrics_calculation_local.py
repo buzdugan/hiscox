@@ -145,12 +145,12 @@ def prep_db():
 			conn.execute(CREATE_TABLE_STATEMENT)
 
 
-@task(name="trigger_retraining", log_prints=True)
-async def trigger_retraining():
-    print("Drift detected, retraining model...")
-    await run_deployment(
-        name='claim_status_classification_flow_local/claims_status_classification_local'
-    )
+# @task(name="trigger_retraining", log_prints=True)
+# async def trigger_retraining():
+#     print("Drift detected, retraining model...")
+#     await run_deployment(
+#         name='claim_status_classification_flow_local/claims_status_classification_local'
+#     )
 
 
 @task(name="calculate_metrics_postgresql", log_prints=True)
@@ -189,17 +189,19 @@ def calculate_metrics_postgresql(curr, i, unseen_df, reference_data):
 	# 	run_deployment(
 	# 		name='claim_status_classification_flow_local/claims_status_classification_local'
 	# 	)
-	if result['metrics'][1]['value']['share'] >= 0.025:
-		trigger_retraining.submit()
+	# if result['metrics'][1]['value']['share'] >= 0.025:
+	# 	trigger_retraining.submit()
 
 	curr.execute(
 		"insert into drift_metrics(timestamp, prediction_drift, num_drifted_columns, share_missing_values) values (%s, %s, %s, %s)",
 		(begin + datetime.timedelta(i), prediction_drift, num_drifted_columns, share_missing_values)
 	)
 
+	return result
+
 
 @flow(name="batch_monitoring_backfill_flow_local", log_prints=True)
-def batch_monitoring_backfill():
+async def batch_monitoring_backfill():
 
 	mlflow_tracking_uri = "http://127.0.0.1:5000"
 	print("Connecting to mlflow registry server...")
@@ -239,7 +241,22 @@ def batch_monitoring_backfill():
 			print(f"Scored the data.")
 
 			with conn.cursor() as curr:
-				calculate_metrics_postgresql(curr, i, unseen_df, reference_data)
+				result = calculate_metrics_postgresql(curr, i, unseen_df, reference_data)
+
+				if result['metrics'][1]['value']['share'] >= 0.025:
+					print(f"Drift detected, retraining model...")
+					
+					try:
+						flow_run = await run_deployment(
+							name="claim_status_classification_flow_local/claims_status_classification_local",
+							timeout=0
+						)
+						print(f"Successfully triggered retraining: {flow_run.id}")
+					except Exception as e:
+						print(f"Failed to trigger retraining: {e}")
+						raise
+
+					break
 
 			new_send = datetime.datetime.now()
 			seconds_elapsed = (new_send - last_send).total_seconds()
