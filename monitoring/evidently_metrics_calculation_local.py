@@ -243,20 +243,21 @@ async def batch_monitoring_backfill():
 			with conn.cursor() as curr:
 				result = calculate_metrics_postgresql(curr, i, unseen_df, reference_data)
 
-				if result['metrics'][1]['value']['share'] >= 0.025:
-					print(f"Drift detected, retraining model...")
-					
-					try:
-						flow_run = await run_deployment(
-							name="claim_status_classification_flow_local/claims_status_classification_local",
-							timeout=0
-						)
-						print(f"Successfully triggered retraining: {flow_run.id}")
-					except Exception as e:
-						print(f"Failed to trigger retraining: {e}")
-						raise
+			print(f"Result drift for {i}: {result['metrics'][1]['value']['share']}")
+			if result['metrics'][1]['value']['share'] >= 0.025:
+				print(f"Drift detected, retraining model...")
+				
+				try:
+					flow_run = await run_deployment(
+						name="claim_status_classification_flow_local/claims_status_classification_local",
+						timeout=0
+					)
+					print(f"Successfully triggered retraining: {flow_run.id}")
+				except Exception as e:
+					print(f"Failed to trigger retraining: {e}")
+					raise
 
-					break
+				break
 
 			new_send = datetime.datetime.now()
 			seconds_elapsed = (new_send - last_send).total_seconds()
