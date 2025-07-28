@@ -20,7 +20,7 @@ from prefect_aws import S3Bucket
 from prefect.artifacts import create_markdown_artifact
 
 
-@task(name="mlflow_initialization")
+#@task(name="mlflow_initialization")
 def init_mlflow(mlflow_tracking_uri, mlflow_experiment_name):
     client = MlflowClient(mlflow_tracking_uri)
 
@@ -37,7 +37,7 @@ def init_mlflow(mlflow_tracking_uri, mlflow_experiment_name):
     return client
 
 
-@task(name="read_data", retries=3, retry_delay_seconds=2)
+#@task(name="read_data", retries=3, retry_delay_seconds=2)
 def read_dataframe(file_path):
     # dataset_from_database = pd.read_csv("dataset_from_database.csv")
     dataset_from_database = pd.read_csv(file_path)
@@ -55,7 +55,7 @@ def read_dataframe(file_path):
     return dataset_from_database
 
 
-@task(name="split_data")
+#@task(name="split_data")
 def create_train_test_datasets(dataset_from_database):
     target = 'claim_status'
     X, y = dataset_from_database.drop(target, axis=1), dataset_from_database[[target]]
@@ -64,7 +64,7 @@ def create_train_test_datasets(dataset_from_database):
     return X_train, X_test, y_train, y_test
 
 
-@task(name="hyperparameter_tuning", log_prints=True)
+#@task(name="hyperparameter_tuning", log_prints=True)
 def hyperparameter_tuning(X_train, y_train, eval_set, eval_metrics):
     # Randomized search for hyperparameter tuning
     parameter_gridSearch = RandomizedSearchCV(
@@ -95,7 +95,7 @@ def hyperparameter_tuning(X_train, y_train, eval_set, eval_metrics):
     return parameter_gridSearch.best_params_
 
 
-@task(name="train_model", log_prints=True)
+#@task(name="train_model", log_prints=True)
 def train_model(X_train, y_train, X_test, y_test, artifact_path):
     with mlflow.start_run() as run:
         mlflow.set_tag("model", "xgboost")
@@ -170,7 +170,7 @@ def train_model(X_train, y_train, X_test, y_test, artifact_path):
         return run.info.run_id
 
 
-@task(name="register_model", log_prints=True)
+#@task(name="register_model", log_prints=True)
 def register_model(run_id, model_name, artifact_path):    
     mlflow.register_model(
         model_uri=f"runs:/{run_id}/{artifact_path}",
@@ -178,7 +178,7 @@ def register_model(run_id, model_name, artifact_path):
     )
 
 
-@task(name="productionize_model", log_prints=True)
+#@task(name="productionize_model", log_prints=True)
 def stage_model(client, run_id, model_name):
     # Get all registered models for model name
     reg_models = client.search_registered_models(
@@ -229,7 +229,7 @@ def stage_model(client, run_id, model_name):
             print(f'Archived version {trained_model_version} of {model_name} model.')
     
 
-@flow(name="claim_status_classification_flow_local")
+#@flow(name="claim_status_classification_flow_local")
 def main_flow():
     np.random.seed(1889)
 
@@ -246,6 +246,11 @@ def main_flow():
 
     dataset_from_database = read_dataframe(file_path)
     X_train, X_test, y_train, y_test = create_train_test_datasets(dataset_from_database)
+
+    # Create and store validation set
+    val_data = pd.concat([X_test, y_test], axis=1)
+    val_data.to_parquet("data/reference.parquet")
+
     print("Model training starting...")
     run_id = train_model(X_train, y_train, X_test, y_test, artifact_path)
     
