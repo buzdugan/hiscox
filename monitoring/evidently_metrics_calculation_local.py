@@ -145,6 +145,7 @@ def prep_db():
 			conn.execute(CREATE_TABLE_STATEMENT)
 
 
+#
 # @task(name="trigger_retraining", log_prints=True)
 # async def trigger_retraining():
 #     print("Drift detected, retraining model...")
@@ -243,8 +244,7 @@ async def batch_monitoring_backfill():
 			with conn.cursor() as curr:
 				result = calculate_metrics_postgresql(curr, i, unseen_df, reference_data)
 
-			print(f"Result drift for {i}: {result['metrics'][1]['value']['share']}")
-			if result['metrics'][1]['value']['share'] >= 0.025:
+			if result['metrics'][0]['value'] >= 0.025:
 				print(f"Drift detected, retraining model...")
 				
 				try:
