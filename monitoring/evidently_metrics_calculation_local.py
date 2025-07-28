@@ -244,7 +244,7 @@ async def batch_monitoring_backfill():
 			with conn.cursor() as curr:
 				result = calculate_metrics_postgresql(curr, i, unseen_df, reference_data)
 
-			if result['metrics'][0]['value'] >= 0.025:
+			if result['metrics'][0]['value'] >= 0.02:
 				print(f"Drift detected, retraining model...")
 				
 				try:
