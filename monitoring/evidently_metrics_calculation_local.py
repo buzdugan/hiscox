@@ -145,6 +145,14 @@ def prep_db():
 			conn.execute(CREATE_TABLE_STATEMENT)
 
 
+@task(name="trigger_retraining", log_prints=True)
+async def trigger_retraining():
+    print("Drift detected, retraining model...")
+    await run_deployment(
+        name='claim_status_classification_flow_local/claims_status_classification_local'
+    )
+
+
 @task(name="calculate_metrics_postgresql", log_prints=True)
 def calculate_metrics_postgresql(curr, i, unseen_df, reference_data):
 
@@ -176,11 +184,13 @@ def calculate_metrics_postgresql(curr, i, unseen_df, reference_data):
 
 	# If there's drift, retrain the model
 	# if result['metrics'][1]['value']['share'] >= 0.5:
+	# if result['metrics'][1]['value']['share'] >= 0.025:
+	# 	print(f"Drift detected, retraining model...")
+	# 	run_deployment(
+	# 		name='claim_status_classification_flow_local/claims_status_classification_local'
+	# 	)
 	if result['metrics'][1]['value']['share'] >= 0.025:
-		print(f"Drift detected, retraining model...")
-		run_deployment(
-			name='claim_status_classification_flow_local/claims_status_classification_local'
-		)
+		trigger_retraining.submit()
 
 	curr.execute(
 		"insert into drift_metrics(timestamp, prediction_drift, num_drifted_columns, share_missing_values) values (%s, %s, %s, %s)",
