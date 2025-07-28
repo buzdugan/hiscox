@@ -21,6 +21,7 @@ pull:
 
 # the deployments section allows you to provide configuration for deploying flows
 deployments:
+# TRAINING FLOWS
 # training.py in the cloud
 - name: "claims_status_classification"
   description: "Cloud version of claims_status_classification"
@@ -45,6 +46,7 @@ deployments:
     name: hiscox_pool
     work_queue_name: null
 
+# SCORING FLOWS
 # scoring.py model from the cloud
 - name: "claims_status_scoring"
   description: "Local version of claims_status_scoring"
@@ -68,3 +70,17 @@ deployments:
   work_pool:
     name: hiscox_pool
     work_queue_name: null
+
+# MONITORING FLOWS
+# evidently_metrics_calculation_local.py running locally
+- name: "batch_monitoring_backfill_local"
+  description: "Local version of batch_monitoring_backfill"
+  schedule:
+    cron: "00 07 * * *"
+    timezone: "Europe/London"
+  flow_name: "batch_monitoring_backfill_flow_local"
+  entrypoint: "evidently_metrics_calculation_local.py:batch_monitoring_backfill"
+  work_pool:
+    name: hiscox_pool
+    work_queue_name: null
+

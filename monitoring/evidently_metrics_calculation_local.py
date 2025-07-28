@@ -48,6 +48,7 @@ CONNECTION_STRING = "host=localhost port=5432 user=postgres password=example"
 CONNECTION_STRING_DB = CONNECTION_STRING + " dbname=test"
 
 
+@task(name="get_num_cat_features", log_prints=True)
 def get_num_cat_features(file_path):
 	df = pd.read_csv(file_path)
 	df.drop(columns=['claim_status'], inplace=True)
@@ -65,11 +66,13 @@ def get_num_cat_features(file_path):
 	return num_features, non_numerical
 
 
+@task(name="load_reference_data", log_prints=True)
 def load_reference_data(file_path):
 	df = pd.read_parquet(file_path)
 	return df
 
 
+@task(name="preprocess_data", log_prints=True)
 def preprocess_data(df):
 	df.drop(columns=['family_history_3', 'employment_type'], inplace=True)
 	non_numerical = ['gender', 'marital_status', 'occupation', 'location', 'prev_claim_rejected', 
@@ -82,6 +85,7 @@ def preprocess_data(df):
 	return df
 
 
+@task(name="create_unseen_data", log_prints=True)
 def create_unseen_data(file_path, random_state):
 	df = pd.read_csv(file_path)
 	df.drop(columns=['claim_status'], inplace=True)
@@ -91,6 +95,7 @@ def create_unseen_data(file_path, random_state):
 	return df.sample(n=1200, random_state=random_state)
 
 
+@task(name="get_prod_model", log_prints=True)
 def get_prod_model(client, model_name):
     # Get all registered models for model name
     reg_models = client.search_registered_models(
@@ -114,6 +119,7 @@ def get_prod_model(client, model_name):
         print(f"No production model found for {model_name}.")
 
 
+@task(name="load_model", log_prints=True)
 def load_model(model_id, experiment_id):
     prod_model = f"mlartifacts/{experiment_id}/models/{model_id}/artifacts/"
 
@@ -122,12 +128,14 @@ def load_model(model_id, experiment_id):
     return model
 
 
+@task(name="apply_model_to_data", log_prints=True)
 def apply_model_to_data(model, run_id, df):
 	df['predicted_claim_status'] = model.predict(df)
 	df['model_run_id'] = run_id
 	return df
 
-    
+
+@task(name="prep_db", log_prints=True)
 def prep_db():
 	with psycopg.connect("host=localhost port=5432 user=postgres password=example", autocommit=True) as conn:
 		res = conn.execute("SELECT 1 FROM pg_database WHERE datname='test'")
@@ -137,6 +145,7 @@ def prep_db():
 			conn.execute(CREATE_TABLE_STATEMENT)
 
 
+@task(name="calculate_metrics_postgresql", log_prints=True)
 def calculate_metrics_postgresql(curr, i, unseen_df, reference_data):
 
 	begin = datetime.datetime(2025, 7, 1, 0, 0)
@@ -178,6 +187,7 @@ def calculate_metrics_postgresql(curr, i, unseen_df, reference_data):
 	)
 
 
+@flow(name="batch_monitoring_backfill_flow_local", log_prints=True)
 def batch_monitoring_backfill():
 
 	mlflow_tracking_uri = "http://127.0.0.1:5000"
