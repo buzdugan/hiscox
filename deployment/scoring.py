@@ -83,7 +83,7 @@ def score_claim_status():
 
     print("Loading aws profile...")
     os.environ["AWS_PROFILE"] = "mlops-user"  # AWS profile name
-    tracking_server_host = "ec2-54-221-148-124.compute-1.amazonaws.com" # public DNS of the EC2 instance
+    tracking_server_host = "ec2-13-221-77-96.compute-1.amazonaws.com" # public DNS of the EC2 instance
     mlflow_tracking_uri = f"http://{tracking_server_host}:5000"
     print("Connecting to mlflow registry server...")
     client = MlflowClient(mlflow_tracking_uri)
