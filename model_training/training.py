@@ -235,7 +235,9 @@ def main_flow():
 
     tracking_server_host = "ec2-13-221-77-96.compute-1.amazonaws.com" # public DNS of the EC2 instance
     mlflow_tracking_uri = f"http://{tracking_server_host}:5000"
-    # mlflow_tracking_uri = "http://127.0.0.1:5000" # run locally
+
+    import os
+    os.environ["AWS_PROFILE"] = "mlops-user"  # AWS profile name
 
     s3_bucket_block = S3Bucket.load("mlops-s3-bucket")
     s3_bucket_block.download_folder_to_path(from_folder="data", to_folder="data")
